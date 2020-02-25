@@ -26,6 +26,14 @@
 
 
 [[constraint]]
+  name = "github.com/gorilla/mux"
+  version = "1.7.4"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mfirmanakbar/bookstore_oauth-go"
+
+[[constraint]]
   name = "github.com/mfirmanakbar/bookstore_utils-go"
   version = "1.1.0"
 

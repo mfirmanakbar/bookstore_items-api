@@ -1,10 +1,13 @@
 package controllers
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/mfirmanakbar/bookstore_items-api/src/domain/items"
 	"github.com/mfirmanakbar/bookstore_items-api/src/services"
+	"github.com/mfirmanakbar/bookstore_items-api/src/utils/http_utils"
 	"github.com/mfirmanakbar/bookstore_oauth-go/oauth"
+	"github.com/mfirmanakbar/bookstore_utils-go/rest_errors"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -33,27 +36,35 @@ type itemsController struct{}
 
 // 3. this is out function that implement the struct
 func (c *itemsController) Create(w http.ResponseWriter, r *http.Request) {
-	// /*
 	if err := oauth.AuthenticateRequest(r); err != nil {
-		//TODO: return json error
+		http_utils.RespondError(w, err)
 		return
 	}
 
-	item := items.Item{
-		Seller: oauth.GetCallerId(r),
-	}
-
-	result, err := services.ItemsService.Create(item)
+	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		//TODO: return json error
+		respErr := rest_errors.NewBadRequestError("invalid request body")
+		http_utils.RespondError(w, respErr)
+		return
+	}
+	defer r.Body.Close()
+
+	var itemRequest items.Item
+	if err := json.Unmarshal(requestBody, &itemRequest); err != nil {
+		respErr := rest_errors.NewBadRequestError("invalid item json body")
+		http_utils.RespondError(w, respErr)
 		return
 	}
 
-	//TODO 201 created
-	fmt.Println(result)
+	itemRequest.Seller = oauth.GetClientId(r)
 
-	// */
-	//panic("implement me")
+	result, createErr := services.ItemsService.Create(itemRequest)
+	if createErr != nil {
+		http_utils.RespondError(w, createErr)
+		return
+	}
+
+	http_utils.RespondJson(w, http.StatusCreated, result)
 }
 
 func (c *itemsController) Get(w http.ResponseWriter, r *http.Request) {
